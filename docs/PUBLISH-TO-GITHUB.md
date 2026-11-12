@@ -10,7 +10,7 @@
 
 ## 0. 出发前先确认（在本机做一次）
 
-- [ ] 已拿到发布包 `生活用品商城-GitHub发布包.zip`（约 20~30 MB）
+- [ ] 已拿到发布包 `生活用品商城-GitHub发布包.zip`（约 30 MB）
 - [ ] 包内 `repo/` 目录含 `.gitignore`、`README.md`、`backend/`、`frontend/`、`tests/`、`docs/`、`.github/`
 - [ ] **包里没有论文 docx/pdf、没有 75MB 演示包、没有 118MB 图片备份**
       —— 论文正文放进公开仓库有查重风险，已按约定排除
@@ -91,7 +91,7 @@ git push -u origin main
 
 看到 `Writing objects: 100% ...` 和 `Branch 'main' set up to track ...` 就是成功。
 
-如果提示 `remote origin already exists`（包里已配过 remote），改用：
+如果提示 `remote origin already exists`（说明这条命令重复执行过，或本机已有同名 remote），改用：
 
 ```bat
 git remote set-url origin https://github.com/你的用户名/life-shop.git
@@ -133,7 +133,7 @@ git push -u origin main
 | 没有 | 论文 docx/pdf、演示包 zip、`node_modules/`、`target/`、`dist/`、`build/`、jar |
 | README | 首页能正常渲染，含运行方式与测试说明 |
 | Actions | 点顶部 **Actions**，CI 首次运行（后端 41 用例 + 前端 20 用例 + 端到端 31 断言），约 3~6 分钟 |
-| 仓库大小 | 20 MB 左右（主要是商品图片），不应超过 50 MB |
+| 仓库大小 | 31 MB 左右（主要是商品图片），不应超过 50 MB |
 
 把 [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) 第一节的「仓库 About 一句话版」
 粘到仓库右侧 **About → Description**，并在 Topics 里加上文末建议的标签。
@@ -145,7 +145,7 @@ git push -u origin main
 | 报错 | 原因 | 处理 |
 | --- | --- | --- |
 | `Authentication failed` | 用了账号密码 | 密码栏必须填 PAT |
-| `remote origin already exists` | 包里已配 remote | 用 `git remote set-url origin <新地址>` |
+| `remote origin already exists` | 重复执行过 `remote add` | 用 `git remote set-url origin <新地址>` |
 | `! [rejected] main -> main (fetch first)` | 建仓时勾了 README / license | 新建空仓库；或 `git pull --rebase origin main` 后再 push |
 | `Failed to connect / timed out` | 网吧网络限制或代理 | 换网络、关代理、或改用方案 B；也可稍后重试 |
 | `Filename too long` | 路径过深或含中文 | 解压到 `D:\life-shop-github\`；执行 `git config core.longpaths true` |
