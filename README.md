@@ -239,20 +239,21 @@ life-shop/
   
 │       └── views/                  页面（admin/ 平台后台，merchant/ 商家后台）
   
-├── docs/                           系统设计说明书（Word + PDF）与全部插图
-│   ├── 生活用品电商系统-系统设计与数据库设计.docx
-│   └── figures/                    16 张图（功能逻辑图、分层架构、13 张实体属性图、全局 E-R 图）
+├── docs/                           项目文档（概述 / 测试 / 排障 / 发布指引）
+│   ├── PROJECT_OVERVIEW.md         项目全景与可直接粘贴的简介文案
+│   ├── TESTING.md                  分层回归测试与断言清单
+│   ├── TROUBLESHOOTING.md          分层排障手册
+│   └── PUBLISH-TO-GITHUB.md        仓库发布流程与报错对照
 ├── sql/life_shop.sql               MySQL 初始化脚本（建库 + 建表 + 演示数据）
   
 ├── scripts/                        图片处理、种子数据生成、接口自检、打包
 │   ├── gen-seed.js                 生成 sql/life_shop.sql 与 H2 数据（唯一数据源）
 │   ├── smoke-test.js               73 项接口自检
 │   ├── check-sfc-bindings.js       静态检查模板里未定义的变量（白屏元凶）
-│   ├── gen-design-figures.js       生成设计说明书的全部插图（SVG -> PNG）
-│   ├── make-design-doc.py          生成 Word 设计说明书（python-docx）
-│   ├── optimize_images.py          商品图压缩（34MB -> 14MB）
-│   ├── make-package.js             组装离线演示包
-│   └── make_zip.py                 跨平台打 zip（UTF-8 文件名 + 保留执行位）
+│   ├── gen-design-figures.js       生成架构图 / E-R 图等插图（SVG -> PNG）
+│   ├── fetch-images.js             抓取并压缩商品图（34MB -> 14MB）
+│   ├── products.js                 商品种子数据（名称、价格、图片映射）
+│   └── make-package.js             组装离线演示包
 ├── build/                          jlink 出的精简 JRE、原图备份（不进版本库）
 └── dist/life-shop-demo/            可直接发给别人的演示包
 
@@ -345,7 +346,7 @@ jlink --module-path "$JAVA_HOME/jmods" \
 cd .. && node scripts/make-package.js
 ```
 
-`scripts/make-package.js` 负责复制 jar 与 runtime、写入两个启动脚本和 `使用说明.txt`、最后调 `scripts/make_zip.py` 压成 zip。
+`scripts/make-package.js` 负责复制 jar 与 runtime、写入两个启动脚本和 `使用说明.txt`、最后直接调用 Node 内置 zlib 压成 zip（不依赖系统 zip）。
 压缩用 Python 的 `zipfile` 而不是 PowerShell 的 `Compress-Archive`，因为后者会把条目写成反斜杠路径、
 中文文件名不带 UTF-8 标记（别人在 Mac 上解压会乱码），也没法保留可执行位。现在 zip 里的路径都是正斜杠、
 文件名带 UTF-8 标记、`start-mac-linux.command` 与 `runtime/bin/*` 记录为 755。
@@ -357,7 +358,7 @@ cd .. && node scripts/make-package.js
   明确排除在回退之外，接口该 404 还是 404。demo profile 里同时关掉了 Boot 默认静态映射（`spring.web.resources.add-mappings=false`），
   避免两套规则打架。
 - **自动选端口**：启动脚本用 `netstat` / `lsof` 从 8080 往后探测到 8090，被占用就换下一个，浏览器打开的是实际端口。
-- **图片瘦身**：`scripts/optimize_images.py` 把商品图最长边压到 900px、JPEG 质量 82（渐进式、去元数据），
+- **图片瘦身**：`scripts/fetch-images.js` 把商品图最长边压到 900px、JPEG 质量 82（渐进式、去元数据），
   34MB → 14MB，原图备份在 `build/image-backup/`。改完图片要重新 `npm run build:server` 才会进包。
 - **数据在内存**：对方重启就恢复初始演示数据，随便试不会弄乱；`uploads/` 只放运行期上传的图片。
 - **macOS / Linux**：包里的 runtime 是 Windows 版，脚本会自动改用系统 Java 17
@@ -369,7 +370,8 @@ cd .. && node scripts/make-package.js
 
 ## 十一、系统设计文档
 
-`docs/` 下是一份可直接用于课程设计 / 项目文档的《系统设计与数据库设计说明书》（28 页）：
+项目开发时另有一份《系统设计与数据库设计说明书》（28 页，含 16 张数据字典表、13 张实体属性图与全局 E-R 图）。**该文档未包含在本仓库中**，下表保留其章节结构，方便对照代码阅读：
+
 
 | 章节 | 内容 |
 |---|---|
@@ -380,40 +382,21 @@ cd .. && node scripts/make-package.js
 | 3.2.4 关键设计说明 | 主键策略、索引、快照冗余、状态约束、数据隔离、历史归档 |
 | 附录 A / B | 5 张新增表的建表语句、状态码与枚举值对照表 |
 
-改完表结构后重新出文档：
+改完表结构后重新出插图：
 
 ```bash
-# 1) 重画插图（需要 puppeteer）
 node scripts/gen-design-figures.js
-# 2) 重新生成 Word
-python scripts/make-design-doc.py
 ```
 
-插图与文档正文都写在脚本里，改字段只改 `scripts/make-design-doc.py` 的 `TABLES` 数组即可。
+插图由脚本按表结构生成，加表只需追加字段定义即可重画。
 
 ---
 
-## 十二、毕业论文（设计说明书）
+## 十二、关于毕业论文
 
-`docs/` 下还有一份按学校模板排版的毕业论文，题目为《基于SpringBoot的生活用品电商系统的设计与实现》：
+本项目同时是毕业设计课题。按学校要求，配套的《设计说明书》与论文正文单独提交，**未包含在本公开仓库中**（出于查重与版权考虑，相关文件已在打包时排除）。
 
-| 文件 | 说明 |
-|---|---|
-| `基于SpringBoot的生活用品电商系统的设计与实现.docx` | 可编辑稿，目录为 Word 域，打开后按 F9 可更新 |
-| `基于SpringBoot的生活用品电商系统的设计与实现.pdf` | 排版效果稿，37 页 |
-
-结构：封面 → 诚信承诺书 → 中文摘要 → 英文摘要 → 目录 → 前言与第1～6章 → 结论 → 致谢 → 参考文献（12 条）。
-正文约 1.4 万字，含 14 张插图（功能结构图、业务流程图、架构图、E-R 图、10 张系统截图）、7 张三线表、2 段核心代码。
-
-重新生成：
-
-```bash
-python scripts/make-thesis-doc.py    # 生成 docx
-python scripts/update-thesis.py      # 用 Word 更新目录域、导出 PDF、统计字数
-```
-
-正文文字在 `scripts/thesis_content_a/b/c.py` 三个文件里，按块组织（`h1/h2/h3/p/fig/tcap/table/code`），
-改内容不用碰排版代码。
+本仓库保留的是可以直接运行、可以直接读的工程本体：后端 81 个接口、前端四个端、分层回归测试与排障手册，上面各节都有具体说明。
 
 ---
 
