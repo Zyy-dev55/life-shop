@@ -1,0 +1,63 @@
+# ---- Java / Maven ----
+target/
+*.class
+*.jar
+*.war
+!**/mvnw
+!**/mvnw.cmd
+
+# ---- Node / Vite ----
+node_modules/
+dist/
+.vite/
+*.local
+
+# ---- IDE ----
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Logs ----
+logs/
+*.log
+
+# ---- 运行期上传文件 ----
+uploads/
+
+# ---- 前端构建产物（npm run build:server 生成，会被打进 jar） ----
+backend/src/main/resources/static/
+
+# ---- 毕业论文与答辩材料：不进公开仓库，避免正文公开带来的查重风险 ----
+docs/*.docx
+docs/*.pdf
+docs/*.bak
+docs/thesis-fig/
+docs/figures/
+build/
+
+# ---- 论文生成 / 排版脚本（脚本内嵌论文正文，同样不公开） ----
+scripts/fill-thesis-template.py
+scripts/gen-thesis-figures.js
+scripts/insert-toc-export.py
+scripts/make-design-doc.py
+scripts/make-thesis-doc.py
+scripts/make_zip.py
+scripts/optimize_images.py
+scripts/rewrite-forms.py
+scripts/thesis_content_a.py
+scripts/thesis_content_b.py
+scripts/thesis_content_c.py
+scripts/update-thesis.py
+
+# ---- 一键启动演示包与本地临时产物 ----
+*.zip
+frontend/.vitest-tmp/
+.vitest-tmp/
+*.db
+.env
+.env.*

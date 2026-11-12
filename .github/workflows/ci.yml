@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend-tests:
+    name: 后端 JUnit 回归测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: mvn test（H2 演示库，无需 MySQL）
+        working-directory: backend
+        run: mvn -B test
+      - name: 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: backend/target/surefire-reports/
+          if-no-files-found: ignore
+
+  frontend-tests:
+    name: 前端 Vitest 回归测试与构建
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: 安装依赖
+        working-directory: frontend
+        run: npm ci
+      - name: 单元 / 契约回归测试
+        working-directory: frontend
+        run: npm test
+      - name: 前端生产构建
+        working-directory: frontend
+        run: npm run build
+
+  end-to-end:
+    name: 分层端到端回归
+    needs: [backend-tests, frontend-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 构建前端并写入后端静态资源目录
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build:server
+      - name: 打包可执行 jar（后端测试已在独立 job 跑过）
+        working-directory: backend
+        run: mvn -B package -DskipTests
+
+      - name: 启动演示模式服务
+        run: |
+          java -jar backend/target/life-shop-server.jar \
+            --spring.profiles.active=demo --server.port=8080 \
+            > /tmp/lifeshop.log 2>&1 &
+          echo $! > /tmp/lifeshop.pid
+      - name: 等待健康检查通过
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:8080/api/auth/health > /dev/null; then
+              echo "服务已就绪"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "服务启动超时，日志如下："
+          cat /tmp/lifeshop.log
+          exit 1
+      - name: L0~L6 分层回归断言
+        run: node tests/regression.mjs http://127.0.0.1:8080
+      - name: 分层排障体检
+        run: node tests/diagnose.mjs http://127.0.0.1:8080
+      - name: 打印服务日志（失败时便于定位）
+        if: failure()
+        run: tail -100 /tmp/lifeshop.log

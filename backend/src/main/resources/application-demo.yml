@@ -1,0 +1,50 @@
+# ------------------------------------------------------------------
+# 演示模式（demo）：使用 H2 内存库，不需要安装 MySQL，启动即可用
+#
+# 启动：mvn spring-boot:run -Dspring-boot.run.profiles=demo
+# 说明：数据在内存中，重启后会按 db/data-h2.sql 重新初始化（改动试坏了重启即可还原）
+# ------------------------------------------------------------------
+server:
+  port: 8080
+
+spring:
+  # 前端产物由 WebMvcConfig 统一托管，关掉 Boot 默认的静态资源映射，避免两套规则打架
+  web:
+    resources:
+      add-mappings: false
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:life_shop;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE,USER
+    username: sa
+    password:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+      schema-locations: classpath:db/schema-h2.sql
+      data-locations: classpath:db/data-h2.sql
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    # demo 打包给别人用时不需要刷满屏 SQL
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+  global-config:
+    banner: false
+
+lifeshop:
+  upload:
+    dir: ./uploads
+
+logging:
+  level:
+    com.lifeshop: info
